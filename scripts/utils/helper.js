@@ -56,13 +56,13 @@ async function attachERC20(account,address,gasPrice,gasLimit){
 
 }
 
-async function deployERC20WithdrawContract(account,args) {
+async function deployWithdrawContract(account,args) {
 
-    const Factory__ERC20Withdraw = await ethers.getContractFactory('ERC20Withdraw',account)
+    const Factory__ERC20Withdraw = await ethers.getContractFactory('Withdraw',account)
     
     const ERC20Withdraw = await upgrades.deployProxy(
         Factory__ERC20Withdraw, 
-        [args.fee,args.expiry,args.version], 
+        [args.fee,args.version],
         { initializer: '__ERC20Withdraw_init' },
         { gasPrice: args.gasPrice, gasLimit: args.gasLimit}
     );
@@ -84,9 +84,6 @@ async function deployERC20Handler(account,args) {
     const Factory__Erc20Handler = await ethers.getContractFactory('ERC20Handler',account)
     Erc20Handler = await Factory__Erc20Handler.connect(account).deploy(
         args.withdrawAddress,
-        [], 
-        [], 
-        [],
         { gasPrice: args.gasPrice, gasLimit: args.gasLimit}
     );
 
@@ -102,9 +99,7 @@ module.exports = {
     log,
 
     deployERC20,
-    attachERC20,
-    deployERC20WithdrawContract,
-    attachERC20WithdrawContract,
+    deployWithdrawContract,
     deployERC20Handler
 
 }

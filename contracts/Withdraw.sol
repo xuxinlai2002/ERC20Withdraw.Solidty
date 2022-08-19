@@ -3,26 +3,29 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./handlers/HandlerHelpers.sol";
 import "./handlers/ERC20Handler.sol";
+import "./interfaces/IERCHandler.sol";
 
 
 /**
     @title Facilitates deposits, creation and votiing of deposit proposals, and deposit executions.
     @author ChainSafe Systems.
  */
-contract ERC20Withdraw is HandlerHelpers {
+contract Withdraw {
 
     uint256 public _fee;
-    uint256 public _expiry;
     address private _owner;
     string _version;
 
-    // destinationChainID => number of deposits
-    mapping(uint64 => uint64) public _depositCounts;
-    // resourceID => handler address
-    mapping(bytes32 => address) public _resourceIDToHandlerAddress;
+    // chainType => handler address
+    mapping(bytes32 => address) public _chainTypeToHandlerAddress;
+
+    event WithdrawResource(
+        bytes32 chainType,
+        string Desition,
+        uint256 amount
+    );
 
     modifier onlyOwner() {
         _onlyOwner();
@@ -37,20 +40,15 @@ contract ERC20Withdraw is HandlerHelpers {
         @notice Initializes Bridge, creates and grants {msg.sender} the admin role,
         creates and grants {initialRelayers} the relayer role.
         @param fee cross chain fee
-        @param expiry cross chain expiry time setting.
         @param version version
      */
     function __ERC20Withdraw_init(
         uint256 fee,
-        uint256 expiry,
         string memory version
     ) public {
-        
         _fee = fee;
-        _expiry = expiry;
         _owner = msg.sender;
         _version = version;
-
     }
 
     /**
@@ -58,21 +56,25 @@ contract ERC20Withdraw is HandlerHelpers {
         and maps the {handlerAddress} to {resourceID} in {_resourceIDToHandlerAddress}.
         @notice Only callable by an address that currently has the admin role.
         @param handlerAddress Address of handler resource will be set for.
-        @param resourceID ResourceID to be used when making deposits.
-        @param tokenAddress Address of contract to be called when a deposit is made and a deposited is executed.
+        @param destinationChainType destination chain to withdraw.
      */
-    function adminSetResource(
+    function adminSetChainHandler(
         address handlerAddress,
-        bytes32 resourceID,
-        address tokenAddress
+        bytes32  destinationChainType
     ) external onlyOwner {
-
-        _resourceIDToHandlerAddress[resourceID] = handlerAddress;
-        ERC20Handler handler = ERC20Handler(handlerAddress);
-        handler.setResource(resourceID, tokenAddress);
+        _chainTypeToHandlerAddress[destinationChainType] = handlerAddress;
     }
 
+    function getHandlerByChainType(bytes32 chainType) public view returns(address){
+        return _chainTypeToHandlerAddress[chainType];
+    }
 
+    function withdraw(bytes32 destChainType, address tokenAddress, address owner, string memory recipient, uint256 amount) external {
+        address handler = _chainTypeToHandlerAddress[destChainType];
+        require(handler != address(0), "not register handler");
+        IERCHandler(handler).withdraw(tokenAddress, owner, recipient, amount);
+        emit WithdrawResource(destChainType,recipient, amount);
+    }
 
 }
 

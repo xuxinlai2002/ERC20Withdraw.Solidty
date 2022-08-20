@@ -74,7 +74,11 @@ describe(`WBTC Test `, () => {
       let owner = alice.address;
       let target = "37sgjU6oKn8XKZJV8CVVHrjVZ6JWBRceNw";
       let handler = await erc20WithdrawContract.getHandlerByChainType(targetChainType);
-      let res = await wbtcContract.approve(handler, utils.parseEther("1") );
+      let res = await wbtcContract.approve(handler, 3 );
+      await sleep(10000);
+      console.log("res==", res);
+      let alloweance = await wbtcContract.allowance(owner, handler);
+      console.log("alloweance :", alloweance);
       await erc20WithdrawContract.withdraw(targetChainType, wbtcContract.address, owner, target, utils.parseEther("1"));
 
     } catch (e) {

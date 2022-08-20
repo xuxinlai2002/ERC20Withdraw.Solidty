@@ -21,9 +21,9 @@ contract Withdraw {
     // chainType => handler address
     mapping(bytes32 => address) public _chainTypeToHandlerAddress;
 
-    event WithdrawResource(
+    event WithdrawAsset(
         bytes32 chainType,
-        string Desition,
+        string desition,
         uint256 amount
     );
 
@@ -62,6 +62,7 @@ contract Withdraw {
         address handlerAddress,
         bytes32  destinationChainType
     ) external onlyOwner {
+        require(handlerAddress != address(0), "handler is null");
         _chainTypeToHandlerAddress[destinationChainType] = handlerAddress;
     }
 
@@ -73,7 +74,7 @@ contract Withdraw {
         address handler = _chainTypeToHandlerAddress[destChainType];
         require(handler != address(0), "not register handler");
         IERCHandler(handler).withdraw(tokenAddress, owner, recipient, amount);
-        emit WithdrawResource(destChainType,recipient, amount);
+        emit WithdrawAsset(destChainType,recipient, amount);
     }
 
 }

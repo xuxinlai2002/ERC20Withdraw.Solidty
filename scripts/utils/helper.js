@@ -2,6 +2,8 @@ const fs = require('fs')
 const path = require('path')
 const { ethers,upgrades } = require("hardhat");
 
+const targetChainType="0xe86ee9f56944ada89e333f06eb40065a86b50a19c5c19dc94fe2d9e15cf947c8";
+
 const writeConfig = async (fromFile,toFile,key, value) => {
 
     let fromFullFile = getPath(fromFile);
@@ -34,26 +36,22 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function deployERC20(name,symbol,amount,decimals,account,gasPrice,gasLimit){
+async function deployERC20(name,symbol,amount,decimals,account){
 
     const dErc20Factory = await ethers.getContractFactory("MockERC20",account);
     const dErc20Contract = await dErc20Factory.deploy(
-        name,symbol,amount,decimals,
-        { gasPrice: gasPrice, gasLimit: gasLimit}
+        name,symbol,amount,decimals
     )
     return dErc20Contract;
 
 }
 
-async function attachERC20(account,address,gasPrice,gasLimit){
-
+async function attachERC20(account,address) {
     const dErc20Factory = await ethers.getContractFactory("MockERC20",account);
     const dErc20Contract = await dErc20Factory.attach(
-        address,
-        { gasPrice: gasPrice, gasLimit: gasLimit}
+        address
     )
     return dErc20Contract;
-
 }
 
 async function deployWithdrawContract(account,args) {
@@ -71,10 +69,10 @@ async function deployWithdrawContract(account,args) {
 
 }
 
-async function attachERC20WithdrawContract(account,tokenAddress) {
+async function attachWithdrawContract(account,withdrawAddress) {
 
-    const Factory__ERC20Withdraw = await ethers.getContractFactory('ERC20Withdraw',account)    
-    let ERC20Withdraw  = await Factory__ERC20Withdraw.connect(account).attach(tokenAddress); 
+    const Factory__ERC20Withdraw = await ethers.getContractFactory('Withdraw',account)
+    let ERC20Withdraw  = await Factory__ERC20Withdraw.connect(account).attach(withdrawAddress);
     return ERC20Withdraw;
 
 }
@@ -100,6 +98,9 @@ module.exports = {
 
     deployERC20,
     deployWithdrawContract,
-    deployERC20Handler
+    deployERC20Handler,
+    attachWithdrawContract,
+    attachERC20,
+    targetChainType
 
 }

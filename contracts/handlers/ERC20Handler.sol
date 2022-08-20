@@ -35,7 +35,7 @@ contract ERC20Handler is HandlerHelpers,ERC20Safe{
         uint256 balance = IERC20(tokenAddress).balanceOf(tokenOwner);
         require(balance >= amount, "Insufficient funds");
         require(bytes(recipient).length > 0 , "recipient is empty");
-//        burnERC20(tokenAddress, tokenOwner, amount); //TODO debug this why burn failed
+        burnERC20(tokenAddress, tokenOwner, amount);
     }
 
 }

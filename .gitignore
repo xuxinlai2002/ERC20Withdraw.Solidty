@@ -12,3 +12,4 @@ cache/
 safe-contracts/node_modules/
 .idea/
 contracts/.DS_Store
+.DS_Store

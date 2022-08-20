@@ -9,14 +9,19 @@ require('@openzeppelin/hardhat-upgrades');
 
 module.exports = {
   networks: {
-    
-    kovan: {
-        url: `https://kovan.infura.io/v3/7e31d49d7c8a48f4a4539aff9da768e7`,
+
+    testnet: {
+        url: `https://api-testnet.elastos.io/esc`,
         accounts: [
-          "0xc03b0a988e2e18794f2f0e881d7ffcd340d583f63c1be078426ae09ddbdec9f5",
-          "0x54e6e01600b66af71b9827429ff32599383d7694684bc09e26c3b13d95980650",
-          "0xcb93f47f4ae6e2ee722517f3a2d3e7f55a5074f430c9860bcfe1d6d172492ed0"
+          "0x9aede013637152836b14b423dabef30c9b880ea550dbec132183ace7ca6177ed"
         ]
+    },
+
+    local: {
+      url: `http://127.0.0.1:6111`,
+      accounts: [
+        "0x9aede013637152836b14b423dabef30c9b880ea550dbec132183ace7ca6177ed"
+      ]
     },
 
     hardhat: {

@@ -28,10 +28,6 @@ const main = async () => {
     let wbtcAddress = readConfig("config", "WBTC");
     console.log("read wbtc address :", wbtcAddress);
     let wbtc = await attachERC20(admin, wbtcAddress);
-    // const tx = await wbtc.approve(ercHandlerContract.address, 3 );
-    // await sleep(10000);
-    // let alloweance = await wbtc.allowance(admin.address, ercHandlerContract.address);
-    // console.log("alloweance :", alloweance);
     process.exit(0)
 }
 

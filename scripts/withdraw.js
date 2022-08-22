@@ -31,7 +31,8 @@ const main = async () => {
     let alloweance = await wbtc.allowance(owner.address, handler);
     console.log("alloweance :", alloweance);
 
-    let tx = await contract.withdraw(targetChainType, tokenAddress, owner.address, target, withdrawAmount);
+    let fee = hEether.utils.parseEther("0.01")
+    let tx = await contract.withdraw(targetChainType, tokenAddress, owner.address, target, withdrawAmount, fee);
     console.log("withdraw tx", tx.hash)
     await sleep(10000)
     balance = await wbtc.balanceOf(owner.address);

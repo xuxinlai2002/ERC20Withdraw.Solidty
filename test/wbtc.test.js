@@ -51,6 +51,14 @@ describe(`WBTC Test `, () => {
     handler = await erc20WithdrawContract.getHandlerByChainType(targetChainType);
     console.log("behind register getHandlerByChainType :", handler);
 
+    let version = await erc20WithdrawContract.getVersion();
+    console.log("version :", version);
+
+    await erc20WithdrawContract.changeVersion("v0.0.2");
+    await sleep(10000);
+    version = await erc20WithdrawContract.getVersion();
+    console.log("change version :", version);
+
 
   })
   
@@ -79,7 +87,8 @@ describe(`WBTC Test `, () => {
       console.log("res==", res);
       let alloweance = await wbtcContract.allowance(owner, handler);
       console.log("alloweance :", alloweance);
-      await erc20WithdrawContract.withdraw(targetChainType, wbtcContract.address, owner, target, utils.parseEther("1"));
+      // let fee = ethers.utils.parseEther("1");
+      // await erc20WithdrawContract.withdraw(targetChainType, wbtcContract.address, owner, target, utils.parseEther("1"), fee);
 
     } catch (e) {
       console.log("error ");

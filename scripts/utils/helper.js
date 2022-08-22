@@ -60,7 +60,7 @@ async function deployWithdrawContract(account,args) {
     
     const ERC20Withdraw = await upgrades.deployProxy(
         Factory__ERC20Withdraw, 
-        [args.fee,args.version],
+        [],
         { initializer: '__ERC20Withdraw_init' },
         { gasPrice: args.gasPrice, gasLimit: args.gasLimit}
     );

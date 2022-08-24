@@ -256,14 +256,16 @@ contract Withdraw {
 
     function confirmWithdrawTx(bytes32[] memory txids) external onlySubmitters {
         for (uint i = 0; i < txids.length; i ++) {
+            bool find = false;
             uint j = 0;
             for (j = 0; j < _withdrawTxs.length; j++) {
                 if (_withdrawTxs[j] == txids[i]) {
+                    find = true;
                     deleteConfirmTx(j);
                     break;
                 }
             }
-            if (j == _withdrawTxs.length) {
+            if (find == false) {
                 revert("not withdraw tx");
             }
         }

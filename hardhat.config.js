@@ -20,7 +20,8 @@ module.exports = {
     local: {
       url: `http://127.0.0.1:6111`,
       accounts: [
-        "0x9aede013637152836b14b423dabef30c9b880ea550dbec132183ace7ca6177ed"
+        "0x9aede013637152836b14b423dabef30c9b880ea550dbec132183ace7ca6177ed",
+        "0x58a6ea95c61cea23a426935067fe276674978be0f12aeaae72faa84ecf893cb8"
       ]
     },
 

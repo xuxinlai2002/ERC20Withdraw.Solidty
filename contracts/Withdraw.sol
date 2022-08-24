@@ -6,21 +6,19 @@ pragma experimental ABIEncoderV2;
 import "./handlers/HandlerHelpers.sol";
 import "./handlers/ERC20Handler.sol";
 import "./interfaces/IERCHandler.sol";
-import "./utils/BytesToTypes.sol";
-import "hardhat/console.sol";
+import "./utils/common.sol";
+//import "hardhat/console.sol";
 
-/**
-    @title Facilitates deposits, creation and votiing of deposit proposals, and deposit executions.
-    @author ChainSafe Systems.
- */
 contract Withdraw {
-
     uint256 public _fee;
     address private _owner;
 
     // chainType => handler address
-    mapping(bytes32 => address) public _chainTypeToHandlerAddress;
-    address[] _signers;
+    mapping(bytes32 => address) private _chainTypeToHandlerAddress;
+    mapping(address => bytes32) private _changeSubmitterFlag;
+    mapping(bytes32 => address[]) private _changeSubmitterSigners;
+
+    address[] _submitters;
     string _version;
     bytes32[] private _withdrawTxs;
 
@@ -33,6 +31,15 @@ contract Withdraw {
     event VersionChanged (
         string indexed oldVersion,
         string indexed newVersion
+    );
+
+    event NewSubmitterCommit (
+        uint indexed totalCount,
+        uint indexed nowCount
+    );
+
+    event NewSubmitterChanged (
+        address[] indexed accounts
     );
 
     modifier onlyOwner() {
@@ -49,10 +56,144 @@ contract Withdraw {
         creates and grants {initialRelayers} the relayer role.
      */
     function __ERC20Withdraw_init(
+        address[] memory submitters
     ) public {
         require(_owner == address(0), "allready init");
         _owner = msg.sender;
+        _submitters = submitters;
         _version = "v0.0.1";
+    }
+
+    modifier onlySubmitters() {
+        _onlySubmitters();
+        _;
+    }
+
+    function _onlySubmitters() private view {
+        address sender = msg.sender;
+        bool isSubmitter = false;
+        for (uint i = 0; i < _submitters.length; i++) {
+            if (sender == _submitters[i]) {
+                isSubmitter = true;
+                break;
+            }
+        }
+        require(isSubmitter, "sender is not submitter");
+    }
+
+    function getSubmitters() external view returns(address[] memory) {
+        return _submitters;
+    }
+
+    function changeSubmitters(address[] memory newSubmitters) external onlySubmitters {
+        require(newSubmitters.length > 0, "new submitter is empty");
+
+        address sender = msg.sender;
+        bytes32 hash =  _changeSubmitterFlag[sender];
+        require(hash == bytes32(0), "allready submit new submitters");
+
+        hash = getSubmittersHash(newSubmitters);
+        _changeSubmitterFlag[sender] = hash;
+
+        address[] storage signers = _changeSubmitterSigners[hash];
+        signers.push(sender);
+        _changeSubmitterSigners[hash] = signers;
+
+        emit NewSubmitterCommit(_submitters.length, signers.length);
+
+        if (signers.length == _submitters.length) {
+            resetChangeSubmitterMap();
+
+            _submitters = newSubmitters;
+
+            emit NewSubmitterChanged(newSubmitters);
+        }
+    }
+
+    function resetChangeSubmitterMap() internal {
+        for (uint i = 0; i < _submitters.length; i ++) {
+            bytes32 hash = _changeSubmitterFlag[_submitters[i]];
+            delete _changeSubmitterFlag[_submitters[i]];
+            delete _changeSubmitterSigners[hash];
+        }
+    }
+
+    function deleteSubmitterSender() external onlySubmitters returns (bool) {
+        address sender = msg.sender;
+        bytes32 hash =  _changeSubmitterFlag[sender];
+        require(hash != bytes32(0), "allready delete this submitter record");
+        delete _changeSubmitterFlag[sender];
+
+        address[] storage signers = _changeSubmitterSigners[hash];
+        for(uint i = 0; i < signers.length; i++) {
+            if (signers[i] == sender) {
+                address[] memory  accounts = Common.deleteArrayList(i, signers);
+                _changeSubmitterSigners[hash] = accounts;
+                break;
+            }
+        }
+
+        return true;
+    }
+
+    function getSubmittersHash(address[] memory submitters) internal pure returns (bytes32){
+        bytes memory allSerialData;
+        for (uint256 i = 0; i < submitters.length; i++) {
+            bytes memory addressBytes = address2Bytes(submitters[i]);
+            allSerialData = mergeBytes(allSerialData,addressBytes);
+        }
+        bytes32 msgHash = keccak256(allSerialData);
+        return msgHash;
+    }
+
+    function mergeBytes(bytes memory a, bytes memory b) internal pure returns (bytes memory c) {
+        // Store the length of the first array
+        uint256 alen = a.length;
+        // Store the length of BOTH arrays
+        uint256 totallen = alen + b.length;
+        // Count the loops required for array a (sets of 32 bytes)
+        uint256 loopsa = (a.length + 31) / 32;
+        // Count the loops required for array b (sets of 32 bytes)
+        uint256 loopsb = (b.length + 31) / 32;
+        assembly {
+            let m := mload(0x40)
+        // Load the length of both arrays to the head of the new bytes array
+            mstore(m, totallen)
+        // Add the contents of a to the array
+            for {
+                let i := 0
+            } lt(i, loopsa) {
+                i := add(1, i)
+            } {
+                mstore(
+                add(m, mul(32, add(1, i))),
+                mload(add(a, mul(32, add(1, i))))
+                )
+            }
+        // Add the contents of b to the array
+            for {
+                let i := 0
+            } lt(i, loopsb) {
+                i := add(1, i)
+            } {
+                mstore(
+                add(m, add(mul(32, add(1, i)), alen)),
+                mload(add(b, mul(32, add(1, i))))
+                )
+            }
+            mstore(0x40, add(m, add(32, totallen)))
+            c := m
+        }
+    }
+
+    function address2Bytes(address a) internal pure returns (bytes memory b){
+        assembly {
+            let m := mload(0x40)
+            a := and(a, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+            mstore(add(m, 20), xor(0x140000000000000000000000000000000000000000, a))
+            mstore(0x40, add(m, 52))
+            b := m
+        }
     }
 
     function getVersion() external view returns(string memory) {
@@ -91,7 +232,7 @@ contract Withdraw {
         emit WithdrawAsset(destChainType,recipient, amount);
     }
 
-    function withdrawTxsReceived(bytes32[] memory txids) external {
+    function withdrawTxsReceived(bytes32[] memory txids) external onlySubmitters {
         for (uint i = 0; i < txids.length; i ++) {
             if (this.isWithdrawTx(txids[i])) {
                 continue;
@@ -113,7 +254,7 @@ contract Withdraw {
         return _withdrawTxs;
     }
 
-    function confirmWithdrawTx(bytes32[] memory txids) external {
+    function confirmWithdrawTx(bytes32[] memory txids) external onlySubmitters {
         for (uint i = 0; i < txids.length; i ++) {
             uint j = 0;
             for (j = 0; j < _withdrawTxs.length; j++) {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 
-library BytesToTypes {
+library Common {
 	function bytes32ToString(bytes32 x) internal pure returns(string memory) {
 		bytes memory bytesString = new bytes(32);
 		uint charCount = 0;
@@ -18,4 +18,14 @@ library BytesToTypes {
         }
 		return string(bytesStringTrimmed);
     }
+
+	function deleteArrayList(uint index, address[] storage signers) internal returns (address[] memory) {
+		require(index < signers.length, "out of bound with signers length");
+		delete signers[index];
+		for (uint i = index; i < signers.length - 1; i++ ) {
+			signers[i] = signers[i + 1];
+		}
+		signers.pop();
+		return signers;
+	}
 }

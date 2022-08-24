@@ -36,6 +36,8 @@ describe(`WBTC Test `, () => {
     await wbtcContract.transfer(alice.address,preAmount);
 
     //deploy ERC20 Withdraw Contract
+    args.submitters = [
+      "0x53781E106a2e3378083bdcEdE1874E5c2a7225f8"];
     erc20WithdrawContract = await deployWithdrawContract(admin,args);
     console.log("erc20WithdrawContract address :",erc20WithdrawContract.address);
 
@@ -58,8 +60,6 @@ describe(`WBTC Test `, () => {
     await sleep(10000);
     version = await erc20WithdrawContract.getVersion();
     console.log("change version :", version);
-
-
   })
   
   it(`WBTC blance `, async () => {
@@ -87,17 +87,10 @@ describe(`WBTC Test `, () => {
       console.log("res==", res);
       let alloweance = await wbtcContract.allowance(owner, handler);
       console.log("alloweance :", alloweance);
-      // let fee = ethers.utils.parseEther("1");
-      // await erc20WithdrawContract.withdraw(targetChainType, wbtcContract.address, owner, target, utils.parseEther("1"), fee);
 
     } catch (e) {
       console.log("error ");
       console.log(e);
     }
-
   })
-
-
-
-
 })

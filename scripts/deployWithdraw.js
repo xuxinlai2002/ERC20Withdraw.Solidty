@@ -5,10 +5,14 @@ const {
 
 const { ethers: hEether } = require('hardhat');
 
+const submitters = [
+    "0x53781E106a2e3378083bdcEdE1874E5c2a7225f8"
+];
+
 const main = async () => {
     let chainId = await getChainId();
     console.log("chainId is :" + chainId);
-    let args = { fee:0,version:"v1.0.0" };
+    let args = { fee:0,version:"v1.0.0",submitters: submitters};
     let accounts = await hEether.getSigners();
     let admin = accounts[0];
     let withdrawContract = await deployWithdrawContract(admin, args);

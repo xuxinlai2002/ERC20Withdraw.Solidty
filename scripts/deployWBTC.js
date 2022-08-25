@@ -1,5 +1,5 @@
 const {
-    deployERC20, writeConfig
+    deployERC20, writeConfig, sleep
 } = require('./utils/helper')
 
 const { ethers: hEether } = require('hardhat');
@@ -15,6 +15,12 @@ const main = async () => {
     console.log("contract wbtc address:", wbtc.address);
 
     writeConfig("config", "config", "WBTC", wbtc.address);
+
+    let preAmount = 100;
+    await wbtc.transfer(accounts[1].address,preAmount);
+    await sleep(10000);
+    let balance = await wbtc.balanceOf(accounts[1].address);
+    console.log("accounts[1]", accounts[1].address, "balance", balance.toString());
 }
 
 main();

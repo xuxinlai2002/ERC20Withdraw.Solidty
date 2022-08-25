@@ -4,15 +4,27 @@ const chai = require('chai')
 const { expect } = chai
 const { solidity } = require('ethereum-waffle')
 chai.use(solidity)
+require("@nomiclabs/hardhat-web3");
 
 const {
     deployWithdrawContract, sleep
 } = require("../scripts/utils/helper")
 const {utils} = require("ethers");
+const {sign} = require("eth-crypto");
 
 describe(`Withdraw Contract Test `, () => {
     let admin = null;
     let withdrawContract;
+    let pendingID;
+
+    let pendingTxs = [
+        "0x702b517ae9ee8a33ac0d6b4d77227c02eedbc5aebea3c09d2375caf7f9be7fc1",
+        "0x7317fbb21447f1b1ef7369d2735dde0dbb440ed7648e4305125c6914b7a4cbf1",
+        "0xb0a3dc1f80ceb7999b1f2738a8a7e611c51b55c95fdf1c6da1831f8df78cde89",
+        "0x702b517ae9ee8a33ac0d6b4d77227c02eedbc5aebea3c09d2375caf7f9be7fc1",
+        "0xab47f922ed8029194fced7f8f0e7aebde6cecdf82c83dafa76e844212bf26394"
+    ];
+
     before(`load accounts and chainID`, async () => {
         let args = { fee:0,version:"v1.0.0" };
 
@@ -27,27 +39,24 @@ describe(`Withdraw Contract Test `, () => {
         console.log("withdrawContract address :",withdrawContract.address);
     })
 
-    it(`withdrawTxsReceived test `, async () => {
+    it(`setPendingWithdrawTx test `, async () => {
         try{
-            let txids = [
-                "0x702b517ae9ee8a33ac0d6b4d77227c02eedbc5aebea3c09d2375caf7f9be7fc1",
-                "0x7317fbb21447f1b1ef7369d2735dde0dbb440ed7648e4305125c6914b7a4cbf1",
-                "0xb0a3dc1f80ceb7999b1f2738a8a7e611c51b55c95fdf1c6da1831f8df78cde89",
-                "0x702b517ae9ee8a33ac0d6b4d77227c02eedbc5aebea3c09d2375caf7f9be7fc1",
-                "0xab47f922ed8029194fced7f8f0e7aebde6cecdf82c83dafa76e844212bf26394"
-            ];
-            await withdrawContract.withdrawTxsReceived(txids);
+            let index;
+            let bytesData=[];
+            for(index = 0; index < pendingTxs.length; index++) {
+                bytesData = bytesData.concat(web3.utils.hexToBytes((pendingTxs[index])));
+            }
+            pendingID = utils.keccak256(bytesData);
+            let sig = await web3.eth.sign(pendingID, admin.address);
+
+            await withdrawContract.setPendingWithdrawTx(pendingID, pendingTxs, [sig]);
             let txs = await withdrawContract.getPendingWithdrawTxs();
-            expect(txs.length).to.equal(4);
             let expectList = [
                 "0x702b517ae9ee8a33ac0d6b4d77227c02eedbc5aebea3c09d2375caf7f9be7fc1",
                 "0x7317fbb21447f1b1ef7369d2735dde0dbb440ed7648e4305125c6914b7a4cbf1",
                 "0xb0a3dc1f80ceb7999b1f2738a8a7e611c51b55c95fdf1c6da1831f8df78cde89",
                 "0xab47f922ed8029194fced7f8f0e7aebde6cecdf82c83dafa76e844212bf26394"
             ];
-
-            await withdrawContract.withdrawTxsReceived(txids);
-            txs = await withdrawContract.getPendingWithdrawTxs();
 
             expect(txs.length).to.equal(expectList.length);
             for (let i = 0; i < txs.length; i++) {
@@ -61,19 +70,29 @@ describe(`Withdraw Contract Test `, () => {
 
     it(`confirmWithdrawTx test `, async () => {
         try{
-            let confirmTx = [
-                "0x702b517ae9ee8a33ac0d6b4d77227c02eedbc5aebea3c09d2375caf7f9be7fc1",
-                "0x7317fbb21447f1b1ef7369d2735dde0dbb440ed7648e4305125c6914b7a4cbf1",
+            let newTxs = [
+                "0x5b4baedc160ed781d69ecf9e51dfc55a4ec86aa364575546bdafcd22b377cbb2",
+                "0x9c0b6f7acda10b1931b19a4854525a46b84e8453cbd1aef8b677be392f34e4ff"
             ];
-            let expectList = [
-                "0xb0a3dc1f80ceb7999b1f2738a8a7e611c51b55c95fdf1c6da1831f8df78cde89",
-                "0xab47f922ed8029194fced7f8f0e7aebde6cecdf82c83dafa76e844212bf26394"
-            ];
-            await withdrawContract.confirmWithdrawTx(confirmTx);
+
+            let bytesData=[];
+            let index = 0;
+            for(index = 0; index < newTxs.length; index++) {
+                bytesData = bytesData.concat(web3.utils.hexToBytes((newTxs[index])));
+            }
+            let newPendingID = utils.keccak256(bytesData);
+            let sig = await web3.eth.sign(newPendingID, admin.address);
+
+            await withdrawContract.setPendingWithdrawTx(newPendingID, newTxs, [sig]);
             let txs = await withdrawContract.getPendingWithdrawTxs();
-            expect(txs.length).to.equal(expectList.length);
+            expect(txs.length).to.equal(pendingTxs.length + newTxs.length - 1);
+
+            sig = await web3.eth.sign(pendingID, admin.address);
+            await withdrawContract.confirmWithdrawTx(pendingID, [sig]);
+            txs = await withdrawContract.getPendingWithdrawTxs();
+            expect(txs.length).to.equal(newTxs.length);
             for (let i = 0; i < txs.length; i++) {
-                expect(txs[i]).to.equal(expectList[i]);
+                expect(txs[i]).to.equal(newTxs[i]);
             }
         } catch (e) {
             console.log("error ");

@@ -2,7 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const { ethers,upgrades } = require("hardhat");
 
-const targetChainType="0xe86ee9f56944ada89e333f06eb40065a86b50a19c5c19dc94fe2d9e15cf947c8";
+const targetChainType = 1;
 
 const writeConfig = async (fromFile,toFile,key, value) => {
 

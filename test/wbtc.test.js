@@ -6,7 +6,7 @@ const { expect } = chai
 chai.use(solidity)
 const { utils } = require('ethers')
 
-const targetChainType="0xe86ee9f56944ada89e333f06eb40065a86b50a19c5c19dc94fe2d9e15cf947c8"
+const targetChainType= 1;
 
 const {
   deployERC20,
@@ -74,23 +74,5 @@ describe(`WBTC Test `, () => {
       console.log(e);
     }
 
-  })
-
-  it(`WBTC Withdraw `, async () => {
-
-    try{
-      let owner = alice.address;
-      let target = "37sgjU6oKn8XKZJV8CVVHrjVZ6JWBRceNw";
-      let handler = await erc20WithdrawContract.getHandlerByChainType(targetChainType);
-      let res = await wbtcContract.approve(handler, 3 );
-      await sleep(10000);
-      console.log("res==", res);
-      let alloweance = await wbtcContract.allowance(owner, handler);
-      console.log("alloweance :", alloweance);
-
-    } catch (e) {
-      console.log("error ");
-      console.log(e);
-    }
   })
 })

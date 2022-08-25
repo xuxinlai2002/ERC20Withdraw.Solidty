@@ -6,24 +6,27 @@ pragma experimental ABIEncoderV2;
 import "./handlers/HandlerHelpers.sol";
 import "./handlers/ERC20Handler.sol";
 import "./interfaces/IERCHandler.sol";
+import "./interfaces/IWithdraw.sol";
 import "./utils/common.sol";
-//import "hardhat/console.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "hardhat/console.sol";
 
-contract Withdraw {
+contract Withdraw is IWithdraw {
     uint256 public _fee;
     address private _owner;
 
     // chainType => handler address
-    mapping(bytes32 => address) private _chainTypeToHandlerAddress;
+    mapping(uint64 => address) private _chainTypeToHandlerAddress;
     mapping(address => bytes32) private _changeSubmitterFlag;
     mapping(bytes32 => address[]) private _changeSubmitterSigners;
+    mapping(bytes32 => bytes32[]) private _pendingWithdrawTxsMap;
+    bytes32[] private _pendingList;
 
-    address[] _submitters;
-    string _version;
-    bytes32[] private _withdrawTxs;
+    address[] internal _submitters;
+    string internal _version;
 
     event WithdrawAsset(
-        bytes32 chainType,
+        uint64 chainType,
         string desition,
         uint256 amount
     );
@@ -42,6 +45,14 @@ contract Withdraw {
         address[] indexed accounts
     );
 
+    event PendingWithdrawTxs (
+        bytes32 indexed pengingID
+    );
+
+    event ConfirmWithdrawTxs (
+        bytes32 indexed pengingID
+    );
+
     modifier onlyOwner() {
         _onlyOwner();
         _;
@@ -58,39 +69,39 @@ contract Withdraw {
     function __ERC20Withdraw_init(
         address[] memory submitters
     ) public {
-        require(_owner == address(0), "allready init");
+        require(_owner == address(0), "already init");
         _owner = msg.sender;
         _submitters = submitters;
         _version = "v0.0.1";
     }
 
     modifier onlySubmitters() {
-        _onlySubmitters();
+        address sender = msg.sender;
+        require(isSubmitter(sender), "sender is not submitter");
         _;
     }
 
-    function _onlySubmitters() private view {
-        address sender = msg.sender;
-        bool isSubmitter = false;
+    function isSubmitter(address sender) private view returns(bool) {
+        bool res = false;
         for (uint i = 0; i < _submitters.length; i++) {
             if (sender == _submitters[i]) {
-                isSubmitter = true;
+                res = true;
                 break;
             }
         }
-        require(isSubmitter, "sender is not submitter");
+       return res;
     }
 
     function getSubmitters() external view returns(address[] memory) {
         return _submitters;
     }
 
-    function changeSubmitters(address[] memory newSubmitters) external onlySubmitters {
+    function changeSubmitters(address[] memory newSubmitters) external override onlySubmitters {
         require(newSubmitters.length > 0, "new submitter is empty");
 
         address sender = msg.sender;
         bytes32 hash =  _changeSubmitterFlag[sender];
-        require(hash == bytes32(0), "allready submit new submitters");
+        require(hash == bytes32(0), "already submit new submitters");
 
         hash = getSubmittersHash(newSubmitters);
         _changeSubmitterFlag[sender] = hash;
@@ -118,10 +129,10 @@ contract Withdraw {
         }
     }
 
-    function deleteSubmitterSender() external onlySubmitters returns (bool) {
+    function deleteSubmitterSender() external override onlySubmitters returns (bool) {
         address sender = msg.sender;
         bytes32 hash =  _changeSubmitterFlag[sender];
-        require(hash != bytes32(0), "allready delete this submitter record");
+        require(hash != bytes32(0), "already delete this submitter record");
         delete _changeSubmitterFlag[sender];
 
         address[] storage signers = _changeSubmitterSigners[hash];
@@ -196,11 +207,11 @@ contract Withdraw {
         }
     }
 
-    function getVersion() external view returns(string memory) {
+    function getVersion() external override view returns(string memory) {
         return _version;
     }
 
-    function changeVersion(string memory version) external onlyOwner {
+    function changeVersion(string memory version) external override onlyOwner {
         emit VersionChanged(_version, version);
         _version = version;
     }
@@ -212,74 +223,113 @@ contract Withdraw {
         @param handlerAddress Address of handler resource will be set for.
         @param destinationChainType destination chain to withdraw.
      */
-    function adminSetChainHandler(
-        address handlerAddress,
-        bytes32  destinationChainType
-    ) external onlyOwner {
+    function adminSetChainHandler(address handlerAddress, uint64  destinationChainType) external override onlyOwner {
         require(handlerAddress != address(0), "handler is null");
         _chainTypeToHandlerAddress[destinationChainType] = handlerAddress;
     }
 
-    function getHandlerByChainType(bytes32 chainType) public view returns(address){
+    function getHandlerByChainType(uint64 chainType) external override view returns(address) {
         return _chainTypeToHandlerAddress[chainType];
     }
 
-    function withdraw(bytes32 destChainType, address tokenAddress, address owner, string memory recipient, uint256 amount, uint256 fee) external {
+    function withdraw(uint64 destChainType, address tokenAddress, address owner, string memory recipient, uint256 amount, uint256 fee) external override payable {
         address handler = _chainTypeToHandlerAddress[destChainType];
         require(handler != address(0), "not register handler");
-        require(fee >= 100000000000000 && fee % 10000000000 == 0);//todo need confirm this value
+        require(fee >= 1000000000000000000 && fee % 1000000000000000000 == 0);//todo need confirm this value now 1ELA
         IERCHandler(handler).withdraw(tokenAddress, owner, recipient, amount);
         emit WithdrawAsset(destChainType,recipient, amount);
+        safeTransferFee(fee);
     }
 
-    function withdrawTxsReceived(bytes32[] memory txids) external onlySubmitters {
-        for (uint i = 0; i < txids.length; i ++) {
-            if (this.isWithdrawTx(txids[i])) {
-                continue;
-            }
-            _withdrawTxs.push(txids[i]);
+    function safeTransferFee(uint256 fee) public {
+        uint count = _submitters.length;
+        uint percent = SafeMath.div(fee, count);
+        for(uint i = 0; i < count; i++) {
+            (bool success, ) = _submitters[i].call{value: percent}(new bytes(0));
+            require(success, "safeTransfer: transfer failed");
         }
     }
 
-    function isWithdrawTx(bytes32 txid) external view returns (bool) {
-        for (uint i = 0; i < _withdrawTxs.length; i++) {
-            if (_withdrawTxs[i] == txid) {
+    function setPendingWithdrawTx(bytes32 pendingID, bytes32[] memory txs, bytes[] memory signatures) external override {
+        require(txs.length > 0, "pending txs is empty");
+        bytes32[] memory list = _pendingWithdrawTxsMap[pendingID];
+        require(list.length == 0, "already set pendingID");
+
+        bool res = verifySignatures(pendingID, signatures);
+        require(res, "verified signature failed");
+
+        _pendingWithdrawTxsMap[pendingID] = txs;
+
+        for (uint i = 0; i < txs.length; i ++) {
+            if (this.isWithdrawTx(txs[i])) {
+                continue;
+            }
+            _pendingList.push(txs[i]);
+        }
+        emit PendingWithdrawTxs(pendingID);
+    }
+
+    function verifySignatures(bytes32 msgHash, bytes[] memory sig) internal view returns (bool){
+        uint8 i = 0;
+        uint8 verifiedNum = 0;
+        uint256 sigLen = sig.length;
+        address signer;
+        require(Common.isRepeatContent(sig) == false, "signature is repeat");
+        for (i = 0; i < sigLen; i++) {
+            signer = Common.recoverSigner(msgHash, sig[i]);
+            require(isSubmitter(signer), "[verifySignatures] signer is not submitter");
+            verifiedNum++;
+            if (verifiedNum >= _submitters.length * 2  / 3) {
                 return true;
-             }
+            }
         }
         return false;
     }
 
-    function getPendingWithdrawTxs() external view returns(bytes32[] memory) {
-        return _withdrawTxs;
+    function isWithdrawTx(bytes32 txID) external view returns (bool) {
+        for (uint i = 0; i < _pendingList.length; i++) {
+            if (_pendingList[i] == txID) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    function confirmWithdrawTx(bytes32[] memory txids) external onlySubmitters {
-        for (uint i = 0; i < txids.length; i ++) {
-            bool find = false;
+    function getPendingTxsByPendingID(bytes32 pendingID) external override view returns(bytes32[] memory) {
+        return _pendingWithdrawTxsMap[pendingID];
+    }
+
+    function getPendingWithdrawTxs() external override view returns(bytes32[] memory) {
+       return _pendingList;
+    }
+
+    function confirmWithdrawTx(bytes32 pendingID, bytes[] memory signatures) external override {
+        bytes32[] memory txs = _pendingWithdrawTxsMap[pendingID];
+        require(txs.length > 0, "[confirmWithdrawTx] pendingID is not found");
+
+        bool res = verifySignatures(pendingID, signatures);
+        require(res, "[confirmWithdrawTx] verified signature failed");
+        for (uint i = 0; i < txs.length; i ++) {
             uint j = 0;
-            for (j = 0; j < _withdrawTxs.length; j++) {
-                if (_withdrawTxs[j] == txids[i]) {
-                    find = true;
+            for (j = 0; j < _pendingList.length; j++) {
+                if (_pendingList[j] == txs[i]) {
                     deleteConfirmTx(j);
                     break;
                 }
             }
-            if (find == false) {
-                revert("not withdraw tx");
-            }
         }
+        delete _pendingWithdrawTxsMap[pendingID];
+        emit ConfirmWithdrawTxs(pendingID);
     }
 
     function deleteConfirmTx(uint index) internal {
-        require(index < _withdrawTxs.length, "out of bound with widthdraw length");
-        delete _withdrawTxs[index];
-        for (uint i = index; i < _withdrawTxs.length - 1; i++ ) {
-           _withdrawTxs[i] = _withdrawTxs[i + 1];
+        require(index < _pendingList.length, "out of bound with widthdraw length");
+        delete _pendingList[index];
+        for (uint i = index; i < _pendingList.length - 1; i++ ) {
+            _pendingList[i] = _pendingList[i + 1];
         }
-       _withdrawTxs.pop();
+        _pendingList.pop();
     }
-
 }
 
 

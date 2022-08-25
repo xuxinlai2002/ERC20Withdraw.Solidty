@@ -31,7 +31,6 @@ const main = async () => {
 
     let wbtcAddress = readConfig("config", "WBTC");
     console.log("read wbtc address :", wbtcAddress);
-    let wbtc = await attachERC20(admin, wbtcAddress);
     process.exit(0)
 }
 

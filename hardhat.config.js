@@ -1,15 +1,13 @@
 require('@nomiclabs/hardhat-ethers')
 require('@nomiclabs/hardhat-waffle')
+require("@nomiclabs/hardhat-web3")
 require('hardhat-deploy')
 
 require('@nomiclabs/hardhat-ethers');
 require('@openzeppelin/hardhat-upgrades');
 
-
-
 module.exports = {
   networks: {
-
     testnet: {
         url: `https://api-testnet.elastos.io/esc`,
         accounts: [

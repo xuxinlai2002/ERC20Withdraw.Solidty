@@ -3,8 +3,10 @@ const {
 } = require('./utils/helper')
 
 const { ethers: hEether } = require('hardhat');
+const {utils} = require("ethers");
+require("@nomiclabs/hardhat-web3");
 
-let receivedTxs = [
+let pendingTxs = [
     "0x702b517ae9ee8a33ac0d6b4d77227c02eedbc5aebea3c09d2375caf7f9be7fc1",
     "0x7317fbb21447f1b1ef7369d2735dde0dbb440ed7648e4305125c6914b7a4cbf1",
     "0xb0a3dc1f80ceb7999b1f2738a8a7e611c51b55c95fdf1c6da1831f8df78cde89",
@@ -23,11 +25,23 @@ const main = async () => {
     let contract = await attachWithdrawContract(owner, withdrawAddress);
     console.log("attachWithdrawContract address:", contract.address);
 
-    let tx = await contract.withdrawTxsReceived(receivedTxs);
+    let bytesData=[];
+    for(let i = 0; i < pendingTxs.length; i++) {
+        bytesData = bytesData.concat(web3.utils.hexToBytes((pendingTxs[i])));
+    }
+    let pendingID = utils.keccak256(bytesData);
+    console.log("pendingID", pendingID);
+    let sig = await web3.eth.sign(pendingID, owner.address);
+
+    let tx = await contract.setPendingWithdrawTx(pendingID, pendingTxs, [sig]);
+    console.log("setPendingWithdrawTx tx", tx.hash)
     await sleep(10000);
 
     let txs = await contract.getPendingWithdrawTxs();
     console.log("getPendingWithdrawTxs:", txs);
+
+    txs = await contract.getPendingTxsByPendingID(pendingID);
+    console.log("getPendingTxsByPendingID:", txs);
 
 }
 

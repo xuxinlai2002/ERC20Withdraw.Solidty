@@ -7,7 +7,6 @@
     "compile": "npx hardhat compile",
     "test": "hardhat test",
     "scripts": "hardhat run "
-    
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.1",
@@ -28,6 +27,7 @@
     "@openzeppelin/contracts": "^3.0.0",
     "@openzeppelin/hardhat-upgrades": "^1.10.0",
     "chai": "^4.3.4",
+    "dotenv": "^16.0.1",
     "lodash": "^4.17.21",
     "solidity-string-utils": "0.0.7"
   }

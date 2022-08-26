@@ -15,17 +15,17 @@ const main = async () => {
     let contract = await attachWithdrawContract(owner, withdrawAddress);
     console.log("attachWithdrawContract address:", contract.address);
 
-
     let target = "37sgjU6oKn8XKZJV8CVVHrjVZ6JWBRceNw";
     let tokenAddress = readConfig("config", "WBTC");
 
     let wbtc = await attachERC20(owner, tokenAddress);
     let balance = await wbtc.balanceOf(owner.address);
-    console.log("before balance", balance)
+    console.log("before balance", balance.toString())
 
     const withdrawAmount = 1;
 
     let handler = readConfig("config", "BTCHandler");
+    console.log("handler", handler);
     await wbtc.approve(handler, withdrawAmount);
     await sleep(10000);
     let alloweance = await wbtc.allowance(owner.address, handler);

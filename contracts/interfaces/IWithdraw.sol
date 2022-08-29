@@ -24,8 +24,6 @@ interface IWithdraw {
 
     function getVersion() external view returns(string memory);
 
-    function changeVersion(string memory version) external;
-
     /**
         @notice Sets a new resource for handler contracts that use the IERCHandler interface,
         and maps the {handlerAddress} to {resourceID} in {_resourceIDToHandlerAddress}.

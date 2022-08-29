@@ -22,7 +22,7 @@ const main = async () => {
     let balance = await wbtc.balanceOf(owner.address);
     console.log("before balance", balance.toString())
 
-    const withdrawAmount = 1;
+    const withdrawAmount = hEether.utils.parseEther("1")
 
     let handler = readConfig("config", "BTCHandler");
     console.log("handler", handler);

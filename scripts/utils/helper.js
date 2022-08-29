@@ -2,6 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const { ethers,upgrades } = require("hardhat");
 const {existsSync} = require("fs");
+const {parseEther} = require("ethers/lib/utils");
 
 const targetChainType = 1;
 
@@ -13,6 +14,9 @@ const writeConfig = async (fromFile,toFile,key, value) => {
     }
 
     let contentText = fs.readFileSync(fromFullFile,'utf-8');
+    if (contentText == "") {
+        contentText = "{}";
+    }
     let data = JSON.parse(contentText);
     data[key] = value;
 

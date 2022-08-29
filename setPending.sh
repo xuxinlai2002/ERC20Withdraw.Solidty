@@ -1,1 +1,1 @@
- npx hardhat run scripts/setWithdrawPending.js --network local
+ npx hardhat run scripts/setWithdrawPending.js --network testnet

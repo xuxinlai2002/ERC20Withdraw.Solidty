@@ -1,1 +1,1 @@
-npx hardhat run scripts/confirmTx.js --network local
+npx hardhat run scripts/confirmTx.js --network testnet

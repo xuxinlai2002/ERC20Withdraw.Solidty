@@ -1,1 +1,1 @@
-npx hardhat run scripts/deployWBTC.js --network local
+npx hardhat run scripts/deployWBTC.js --network testnet

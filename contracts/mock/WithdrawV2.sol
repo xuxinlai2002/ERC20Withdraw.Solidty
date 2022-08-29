@@ -3,15 +3,15 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./handlers/HandlerHelpers.sol";
-import "./handlers/ERC20Handler.sol";
-import "./interfaces/IERCHandler.sol";
-import "./interfaces/IWithdraw.sol";
-import "./utils/common.sol";
+import "../handlers/HandlerHelpers.sol";
+import "../handlers/ERC20Handler.sol";
+import "../interfaces/IERCHandler.sol";
+import "../interfaces/IWithdraw.sol";
+import "../utils/common.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "hardhat/console.sol";
 
-contract Withdraw is IWithdraw {
+contract WithdrawV2 is IWithdraw {
     uint256 public _fee;
     address private _owner;
 
@@ -29,6 +29,11 @@ contract Withdraw is IWithdraw {
         uint64 chainType,
         string desition,
         uint256 amount
+    );
+
+    event VersionChanged (
+        string indexed oldVersion,
+        string indexed newVersion
     );
 
     event NewSubmitterCommit (
@@ -83,7 +88,7 @@ contract Withdraw is IWithdraw {
                 break;
             }
         }
-       return res;
+        return res;
     }
 
     function getSubmitters() external view returns(address[] memory) {
@@ -289,7 +294,7 @@ contract Withdraw is IWithdraw {
     }
 
     function getPendingWithdrawTxs() external override view returns(bytes32[] memory) {
-       return _pendingList;
+        return _pendingList;
     }
 
     function confirmWithdrawTx(bytes32 pendingID, bytes[] memory signatures) external override {

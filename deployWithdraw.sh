@@ -1,1 +1,1 @@
-npx hardhat run scripts/deployWithdraw.js --network local
+npx hardhat run scripts/deployWithdraw.js --network testnet

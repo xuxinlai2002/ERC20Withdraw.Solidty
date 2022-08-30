@@ -98,6 +98,11 @@ async function deployERC20Handler(account,args) {
     return Erc20Handler;
 }
 
+function parseBTC(amount) {
+    let satoshi = amount * 1e8
+    return
+}
+
 
 module.exports = {
     writeConfig,
@@ -110,6 +115,7 @@ module.exports = {
     deployERC20Handler,
     attachWithdrawContract,
     attachERC20,
-    targetChainType
+    targetChainType,
+    parseBTC
 
 }

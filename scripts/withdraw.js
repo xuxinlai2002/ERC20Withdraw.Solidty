@@ -20,9 +20,9 @@ const main = async () => {
 
     let wbtc = await attachERC20(owner, tokenAddress);
     let balance = await wbtc.balanceOf(owner.address);
-    console.log("before balance", balance.toString())
+    console.log("before balance", balance.toString(), hEether.utils.formatUnits(balance, 8))
 
-    const withdrawAmount = hEether.utils.parseEther("1")
+    const withdrawAmount = hEether.utils.parseUnits("1", 8);
 
     let handler = readConfig("config", "BTCHandler");
     console.log("handler", handler);
@@ -36,7 +36,7 @@ const main = async () => {
     console.log("withdraw tx", tx.hash)
     await sleep(10000)
     balance = await wbtc.balanceOf(owner.address);
-    console.log("before balance", balance);
+    console.log("behind balance", balance, "btc", hEether.utils.formatUnits(balance, 8));
     alloweance = await wbtc.allowance(owner.address, handler);
     console.log("alloweance :", alloweance);
 

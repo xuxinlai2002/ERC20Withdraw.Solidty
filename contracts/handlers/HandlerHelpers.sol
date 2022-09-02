@@ -9,11 +9,11 @@ import "../interfaces/IERCHandler.sol";
     @author ChainSafe Systems.
     @notice This contract is intended to be used with the Bridge contract.
  */
-contract HandlerHelpers is IERCHandler{
+contract HandlerHelpers is IERCHandler {
     address public _withdrawAddress;
 
-    // token contract address => is burnable
-    mapping(address => bool) public _burnList;
+    // chainType => token contract address
+    mapping (uint64 => address) public _chainTypeToTokenContractAddress;
 
     modifier onlyWithdraw() {
         _onlyWithdraw();
@@ -23,20 +23,10 @@ contract HandlerHelpers is IERCHandler{
     function _onlyWithdraw() private view {
         require(msg.sender == _withdrawAddress, "sender must be bridge contract");
     }
-    
-    /**
-    @notice First verifies {contractAddress} is whitelisted, then sets {_burnList}[{contractAddress}]
-    to true.
-    @param contractAddress Address of contract to be used when making or executing deposits.
-    */
-    function setBurnable(address contractAddress) external onlyWithdraw override {
-        _setBurnable(contractAddress);
+
+    function registerToken(uint64 destChainType, address tokenAddress) external override onlyWithdraw {
+        _chainTypeToTokenContractAddress[destChainType] = tokenAddress;
     }
 
-
-    function _setBurnable(address contractAddress) internal {
-        _burnList[contractAddress] = true;
-    }
-
-    function withdraw(address tokenAddress, address tokenOwner, string memory recipient, uint256 amount) external virtual override {}
+    function withdraw(uint64 destChainType, address tokenOwner, string memory recipient, uint256 amount) external virtual override {}
 }

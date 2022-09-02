@@ -41,7 +41,8 @@ contract Withdraw is IWithdraw {
     );
 
     event PendingWithdrawTxs (
-        bytes32 indexed pengingID
+        bytes32 indexed pengingID,
+        bytes32[] txs
     );
 
     event ConfirmWithdrawTxs (
@@ -239,13 +240,10 @@ contract Withdraw is IWithdraw {
         }
     }
 
-    function setPendingWithdrawTx(bytes32 pendingID, bytes32[] memory txs, bytes[] memory signatures) external override {
+    function setPendingWithdrawTx(bytes32 pendingID, bytes32[] memory txs) external override onlySubmitters {
         require(txs.length > 0, "pending txs is empty");
         bytes32[] memory list = _pendingWithdrawTxsMap[pendingID];
         require(list.length == 0, "already set pendingID");
-
-        bool res = verifySignatures(pendingID, signatures);
-        require(res, "verified signature failed");
 
         _pendingWithdrawTxsMap[pendingID] = txs;
 
@@ -255,7 +253,7 @@ contract Withdraw is IWithdraw {
             }
             _pendingList.push(txs[i]);
         }
-        emit PendingWithdrawTxs(pendingID);
+        emit PendingWithdrawTxs(pendingID, txs);
     }
 
     function verifySignatures(bytes32 msgHash, bytes[] memory sig) internal view returns (bool){

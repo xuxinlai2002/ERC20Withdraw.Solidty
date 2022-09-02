@@ -10,7 +10,7 @@ pragma experimental ABIEncoderV2;
 interface IWithdraw {
     function withdraw(uint64 destChainType, address tokenAddress, address owner, string memory recipient, uint256 amount, uint256 fee) external payable;
 
-    function setPendingWithdrawTx(bytes32 pendingID, bytes32[] memory txs, bytes[] memory signatures) external;
+    function setPendingWithdrawTx(bytes32 pendingID, bytes32[] memory txs) external;
 
     function getPendingTxsByPendingID(bytes32 pendingID) external view returns(bytes32[] memory);
 

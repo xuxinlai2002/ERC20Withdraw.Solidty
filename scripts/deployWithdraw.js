@@ -24,13 +24,15 @@ const main = async () => {
     console.log("erc Handler Contract :",ercHandlerContract.address);
     writeConfig("config", "config", "BTCHandler", ercHandlerContract.address);
 
-    await withdrawContract.adminSetChainHandler(ercHandlerContract.address, targetChainType);
-    await sleep(6000);
+    let wbtcAddress = await readConfig("config", "WBTC");
+    console.log("read wbtc address :", wbtcAddress);
+
+    let tx = await withdrawContract.adminRegisterToken(ercHandlerContract.address, targetChainType, wbtcAddress);
+    console.log("adminRegisterToken", "tx.hash", tx.hash);
+    await sleep(10000);
     let handler = await withdrawContract.getHandlerByChainType(targetChainType);
     console.log("register getHandlerByChainType :", handler);
 
-    let wbtcAddress = readConfig("config", "WBTC");
-    console.log("read wbtc address :", wbtcAddress);
     process.exit(0)
 }
 

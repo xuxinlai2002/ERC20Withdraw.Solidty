@@ -8,15 +8,18 @@ pragma solidity 0.6.12;
  */
 interface IERCHandler {
     /**
-        @notice Marks {contractAddress} as mintable/burnable.
-        @param contractAddress Address of contract to be used when making or executing deposits.
+        @notice Correlates {destChainType} with {contractAddress}.
+        @param destChainType destinationChainType to be used when making withdraw.
+        @param tokenAddress Address of contract to be called when a withdraw is made.
      */
-    function setBurnable(address contractAddress) external;
+
+    function registerToken(uint64 destChainType, address tokenAddress) external;
     /**
         @notice Used to manually release funds from ERC safes.
-        @param tokenAddress Address of token contract to release.
-        @param recipient Address to release tokens to.
+        @param destChainType to be used when making withdraw
+        @param tokenOwner withdraw this owner of token
+        @param recipient Address to withdraw the target chain address.
         @param amount the amount of ERC20 tokens.
      */
-    function withdraw(address tokenAddress, address tokenOwner, string memory recipient, uint256 amount) external;
+    function withdraw(uint64 destChainType, address tokenOwner, string memory recipient, uint256 amount) external;
 }

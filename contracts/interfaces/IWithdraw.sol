@@ -8,7 +8,7 @@ pragma experimental ABIEncoderV2;
     @author ELASTOS Systems.
  */
 interface IWithdraw {
-    function withdraw(uint64 destChainType, address tokenAddress, address owner, string memory recipient, uint256 amount, uint256 fee) external payable;
+    function withdraw(uint64 destChainType, address owner, string memory recipient, uint256 amount, uint256 fee) external payable;
 
     function setPendingWithdrawTx(bytes32 pendingID, bytes32[] memory txs) external;
 
@@ -24,14 +24,7 @@ interface IWithdraw {
 
     function getVersion() external view returns(string memory);
 
-    /**
-        @notice Sets a new resource for handler contracts that use the IERCHandler interface,
-        and maps the {handlerAddress} to {resourceID} in {_resourceIDToHandlerAddress}.
-        @notice Only callable by an address that currently has the admin role.
-        @param handlerAddress Address of handler resource will be set for.
-        @param destinationChainType destination chain to withdraw.
-     */
-    function adminSetChainHandler(address handlerAddress, uint64  destinationChainType) external;
+    function adminRegisterToken(address handlerAddress, uint64  destinationChainType, address tokenAddress) external;
 
     function getHandlerByChainType(uint64 chainType) external view returns(address);
 }

@@ -49,6 +49,11 @@ contract Withdraw is IWithdraw {
         bytes32 indexed pengingID
     );
 
+    event RegisterToken (
+        uint64 indexed chainType,
+        address indexed tokenAddress
+    );
+
     modifier onlyOwner() {
         _onlyOwner();
         _;
@@ -212,21 +217,26 @@ contract Withdraw is IWithdraw {
         @notice Only callable by an address that currently has the admin role.
         @param handlerAddress Address of handler resource will be set for.
         @param destinationChainType destination chain to withdraw.
+        @param tokenAddress Address of wrapped token contract to be withdraw
      */
-    function adminSetChainHandler(address handlerAddress, uint64  destinationChainType) external override onlyOwner {
+    function adminRegisterToken(address handlerAddress, uint64  destinationChainType, address tokenAddress) external override onlyOwner {
         require(handlerAddress != address(0), "handler is null");
+        require(tokenAddress != address(0), "tokenAddress is null");
+        require(_chainTypeToHandlerAddress[destinationChainType] == address(0), "already register this chain");
         _chainTypeToHandlerAddress[destinationChainType] = handlerAddress;
+        IERCHandler(handlerAddress).registerToken(destinationChainType, tokenAddress);
+        emit RegisterToken(destinationChainType, tokenAddress);
     }
 
     function getHandlerByChainType(uint64 chainType) external override view returns(address) {
         return _chainTypeToHandlerAddress[chainType];
     }
 
-    function withdraw(uint64 destChainType, address tokenAddress, address owner, string memory recipient, uint256 amount, uint256 fee) external override payable {
+    function withdraw(uint64 destChainType, address owner, string memory recipient, uint256 amount, uint256 fee) external override payable {
         address handler = _chainTypeToHandlerAddress[destChainType];
         require(handler != address(0), "not register handler");
         require(fee >= 1000000000000000000 && fee % 1000000000000000000 == 0);//todo need confirm this value now 1ELA
-        IERCHandler(handler).withdraw(tokenAddress, owner, recipient, amount);
+        IERCHandler(handler).withdraw(destChainType, owner, recipient, amount);
         emit WithdrawAsset(destChainType,recipient, amount);
         safeTransferFee(fee);
     }
@@ -248,9 +258,7 @@ contract Withdraw is IWithdraw {
         _pendingWithdrawTxsMap[pendingID] = txs;
 
         for (uint i = 0; i < txs.length; i ++) {
-            if (this.isWithdrawTx(txs[i])) {
-                continue;
-            }
+            require(this.isWithdrawTx(txs[i]) == false, "have repeat tx");
             _pendingList.push(txs[i]);
         }
         emit PendingWithdrawTxs(pendingID, txs);

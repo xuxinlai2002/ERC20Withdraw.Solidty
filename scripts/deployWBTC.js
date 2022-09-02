@@ -4,7 +4,6 @@ const {
 
 const { ethers: hEether } = require('hardhat');
 const {parseEther, parseUnits} = require("ethers/lib/utils");
-const {formatUnits} = require("@ethersproject/units/src.ts");
 
 const main = async () => {
 
@@ -16,16 +15,16 @@ const main = async () => {
     const decimal = 8;
     let amount = parseUnits("22000000", decimal);
     console.log("amount", amount)
-    let wbtc = await deployERC20("WBTC","BTC", amount, decimal, accounts[0], );
+    let wbtc = await deployERC20("WBTC","BTC", amount, decimal, accounts[0]);
     console.log("contract wbtc address:", wbtc.address);
 
     writeConfig("config", "config", "WBTC", wbtc.address);
 
     let preAmount = parseUnits("100", decimal);
     await wbtc.transfer(accounts[1].address,preAmount);
-    await sleep(10000);
+    await sleep(15000);
     let balance = await wbtc.balanceOf(accounts[1].address);
-    console.log("accounts[1]", accounts[1].address, "balance", balance.toString(), "btc", formatUnits(balance, 8));
+    console.log("accounts[1]", accounts[1].address, "balance", balance.toString(), "btc", hEether.utils.formatUnits(balance, 8));
 }
 
 main();

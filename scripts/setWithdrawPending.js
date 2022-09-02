@@ -20,7 +20,7 @@ const main = async () => {
     console.log("chainId is :" + chainId);
     let args = { fee:0,version:"v1.0.0" }
     let accounts = await hEether.getSigners();
-    let owner = accounts[0];
+    let owner = accounts[1];
     let withdrawAddress = readConfig("config", "Withdraw");
     let contract = await attachWithdrawContract(owner, withdrawAddress);
     console.log("attachWithdrawContract address:", contract.address);
@@ -31,11 +31,11 @@ const main = async () => {
     }
     let pendingID = utils.keccak256(bytesData);
     console.log("pendingID", pendingID);
-    let sig = await web3.eth.sign(pendingID, owner.address);
+    // let sig = await web3.eth.sign(pendingID, owner.address);
 
-    let tx = await contract.setPendingWithdrawTx(pendingID, pendingTxs, [sig]);
+    let tx = await contract.setPendingWithdrawTx(pendingID, pendingTxs);
     console.log("setPendingWithdrawTx tx", tx.hash)
-    await sleep(10000);
+    await sleep(15000);
 
     let txs = await contract.getPendingWithdrawTxs();
     console.log("getPendingWithdrawTxs:", txs);

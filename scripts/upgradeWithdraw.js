@@ -25,7 +25,7 @@ const main = async () => {
         "0x53781E106a2e3378083bdcEdE1874E5c2a7225f8"
     ];
 
-    const withdrawV2 = await ethers.getContractFactory("WithdrawV2", owner);
+    const withdrawV2 = await ethers.getContractFactory("Withdraw", owner);
     await upgrades.upgradeProxy(
         withdrawAddress,
         withdrawV2,
@@ -33,7 +33,7 @@ const main = async () => {
         {call:"__ERC20Withdraw_init"},
 
     );
-    await sleep(10000);
+    await sleep(15000);
     console.log('withdraw upgraded ! ');
 
     const instanceV2 = await withdrawV2.attach(withdrawAddress);

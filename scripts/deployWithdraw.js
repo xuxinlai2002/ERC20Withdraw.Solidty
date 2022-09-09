@@ -20,6 +20,7 @@ const main = async () => {
     writeConfig("config", "config", "Withdraw", withdrawContract.address);
 
     args.withdrawAddress = withdrawContract.address;
+    await sleep(10000)
     let ercHandlerContract = await deployERC20Handler(admin,args);
     console.log("erc Handler Contract :",ercHandlerContract.address);
     writeConfig("config", "config", "BTCHandler", ercHandlerContract.address);

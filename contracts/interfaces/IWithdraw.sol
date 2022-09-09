@@ -23,7 +23,7 @@ interface IWithdraw {
 
     function getPendingWithdrawTxs() external view returns(bytes32[] memory);
 
-    function confirmWithdrawTx(bytes32 pendingID, bytes[] memory signatures) external;
+    function confirmWithdrawTx(bytes32 pendingID, bytes32 targetTXID, bytes[] memory signatures) external;
 
     function changeSubmitters(address[] memory newSubmitters) external;
 

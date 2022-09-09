@@ -49,7 +49,9 @@ contract Withdraw is IWithdraw {
     );
 
     event ConfirmWithdrawTxs (
-        bytes32 indexed pengingID
+        bytes32 indexed pengingID,
+        bytes32 targetTXID,
+        bytes32[] txs
     );
 
     event RegisterToken (
@@ -305,7 +307,7 @@ contract Withdraw is IWithdraw {
        return _pendingList;
     }
 
-    function confirmWithdrawTx(bytes32 pendingID, bytes[] memory signatures) external override {
+    function confirmWithdrawTx(bytes32 pendingID, bytes32 targetTXID, bytes[] memory signatures) external override {
         bytes32[] memory txs = _pendingWithdrawTxsMap[pendingID];
         require(txs.length > 0, "[confirmWithdrawTx] pendingID is not found");
 
@@ -321,7 +323,7 @@ contract Withdraw is IWithdraw {
             }
         }
         delete _pendingWithdrawTxsMap[pendingID];
-        emit ConfirmWithdrawTxs(pendingID);
+        emit ConfirmWithdrawTxs(pendingID, targetTXID, txs);
     }
 
     function deleteConfirmTx(uint index) internal {

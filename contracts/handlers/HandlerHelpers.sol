@@ -29,4 +29,6 @@ contract HandlerHelpers is IERCHandler {
     }
 
     function withdraw(uint64 destChainType, address tokenOwner, string memory recipient, uint256 amount) external virtual override {}
+
+    function confirmTx(uint64 destChainType, uint256 amount) external virtual override {}
 }

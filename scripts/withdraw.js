@@ -40,6 +40,8 @@ const main = async () => {
     alloweance = await wbtc.allowance(owner.address, handler);
     console.log("alloweance :", alloweance);
 
+    let handlerBalance = await wbtc.balanceOf(handler);
+    console.log("handlerBalance wbtc balance :", handlerBalance);
 }
 
 main();

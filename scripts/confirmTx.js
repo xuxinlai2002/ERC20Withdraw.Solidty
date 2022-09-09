@@ -1,15 +1,12 @@
 const {
-    attachWithdrawContract, readConfig, sleep
+    attachWithdrawContract, readConfig, sleep, attachERC20
 } = require('./utils/helper')
 
 const { ethers: hEether } = require('hardhat');
 const {utils} = require("ethers");
 
 let pendingTxs = [
-    "0x702b517ae9ee8a33ac0d6b4d77227c02eedbc5aebea3c09d2375caf7f9be7fc1",
-    "0x7317fbb21447f1b1ef7369d2735dde0dbb440ed7648e4305125c6914b7a4cbf1",
-    "0xb0a3dc1f80ceb7999b1f2738a8a7e611c51b55c95fdf1c6da1831f8df78cde89",
-    "0xab47f922ed8029194fced7f8f0e7aebde6cecdf82c83dafa76e844212bf26394"
+    "0x702b517ae9ee8a33ac0d6b4d77227c02eedbc5aebea3c09d2375caf7f9be7fc1"
 ];
 
 const main = async () => {
@@ -35,6 +32,13 @@ const main = async () => {
     txs = await contract.getPendingTxsByPendingID(pendingID);
     console.log("before confirm getPendingTxsByPendingID:", txs);
 
+
+    let tokenAddress = await readConfig("config", "WBTC");
+    let wbtc = await attachERC20(owner, tokenAddress);
+    let handler = await readConfig("config", "BTCHandler");
+    let handlerBalance = await wbtc.balanceOf(handler);
+    console.log("before confirm handlerBalance wbtc balance :", handlerBalance);
+
     let sig = await web3.eth.sign(pendingID, owner.address);
 
     let tx = await contract.confirmWithdrawTx(pendingID, [sig]);
@@ -46,6 +50,9 @@ const main = async () => {
 
     txs = await contract.getPendingTxsByPendingID(pendingID);
     console.log("getPendingTxsByPendingID:", txs);
+
+    handlerBalance = await wbtc.balanceOf(handler);
+    console.log("behind confirm handlerBalance wbtc balance :", handlerBalance);
 }
 
 main();

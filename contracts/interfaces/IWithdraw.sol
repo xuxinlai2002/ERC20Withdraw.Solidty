@@ -8,9 +8,16 @@ pragma experimental ABIEncoderV2;
     @author ELASTOS Systems.
  */
 interface IWithdraw {
+
+    struct PendingTx {
+        bytes32 tx;
+        uint64 chainType;
+        uint256 amount;
+    }
+
     function withdraw(uint64 destChainType, address owner, string memory recipient, uint256 amount, uint256 fee) external payable;
 
-    function setPendingWithdrawTx(bytes32 pendingID, bytes32[] memory txs) external;
+    function setPendingWithdrawTx(bytes32 pendingID, PendingTx[] memory txs) external;
 
     function getPendingTxsByPendingID(bytes32 pendingID) external view returns(bytes32[] memory);
 

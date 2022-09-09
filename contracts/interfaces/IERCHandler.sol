@@ -22,4 +22,6 @@ interface IERCHandler {
         @param amount the amount of ERC20 tokens.
      */
     function withdraw(uint64 destChainType, address tokenOwner, string memory recipient, uint256 amount) external;
+
+    function confirmTx(uint64 destChainType, uint256 amount) external;
 }

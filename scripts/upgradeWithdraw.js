@@ -18,6 +18,8 @@ const main = async () => {
     const withdraw = await ethers.getContractFactory('Withdraw',owner);
 
     const instanceV1 = await withdraw.attach(withdrawAddress);
+    console.log("instanceV1 :",instanceV1);
+
     let version = await instanceV1.getVersion();
     console.log("instanceV1", instanceV1.address, "version", version);
 

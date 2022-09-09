@@ -26,7 +26,7 @@ const main = async () => {
 
     let wbtcAddress = await readConfig("config", "WBTC");
     console.log("read wbtc address :", wbtcAddress);
-
+    await sleep(10000);
     let tx = await withdrawContract.adminRegisterToken(ercHandlerContract.address, targetChainType, wbtcAddress);
     console.log("adminRegisterToken", "tx.hash", tx.hash);
     await sleep(10000);

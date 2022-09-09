@@ -20,6 +20,9 @@ contract Withdraw is IWithdraw {
     mapping(address => bytes32) private _changeSubmitterFlag;
     mapping(bytes32 => address[]) private _changeSubmitterSigners;
     mapping(bytes32 => bytes32[]) private _pendingWithdrawTxsMap;
+
+    //tx => PendingTx
+    mapping(bytes32 => PendingTx) private _pendingTxMap;
     bytes32[] private _pendingList;
 
     address[] internal _submitters;
@@ -250,18 +253,22 @@ contract Withdraw is IWithdraw {
         }
     }
 
-    function setPendingWithdrawTx(bytes32 pendingID, bytes32[] memory txs) external override onlySubmitters {
+    function setPendingWithdrawTx(bytes32 pendingID, PendingTx[] memory txs) external override onlySubmitters {
         require(txs.length > 0, "pending txs is empty");
         bytes32[] memory list = _pendingWithdrawTxsMap[pendingID];
         require(list.length == 0, "already set pendingID");
-
-        _pendingWithdrawTxsMap[pendingID] = txs;
+        bytes32[] memory ids = new bytes32[](txs.length);
+        for (uint i = 0; i < txs.length; i++) {
+            ids[i] = txs[i].tx;
+        }
+        _pendingWithdrawTxsMap[pendingID] = ids;
 
         for (uint i = 0; i < txs.length; i ++) {
-            require(this.isWithdrawTx(txs[i]) == false, "have repeat tx");
-            _pendingList.push(txs[i]);
+            require(this.isWithdrawTx(ids[i]) == false, "have repeat tx");
+            _pendingList.push(ids[i]);
+            _pendingTxMap[ids[i]] = txs[i];
         }
-        emit PendingWithdrawTxs(pendingID, txs);
+        emit PendingWithdrawTxs(pendingID, ids);
     }
 
     function verifySignatures(bytes32 msgHash, bytes[] memory sig) internal view returns (bool){
@@ -319,11 +326,16 @@ contract Withdraw is IWithdraw {
 
     function deleteConfirmTx(uint index) internal {
         require(index < _pendingList.length, "out of bound with widthdraw length");
+        bytes32 txID = _pendingList[index];
         delete _pendingList[index];
         for (uint i = index; i < _pendingList.length - 1; i++ ) {
             _pendingList[i] = _pendingList[i + 1];
         }
         _pendingList.pop();
+
+        PendingTx memory ts = _pendingTxMap[txID];
+        address handler = _chainTypeToHandlerAddress[ts.chainType];
+        IERCHandler(handler).confirmTx(ts.chainType, ts.amount);
     }
 }
 

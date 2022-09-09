@@ -9,8 +9,10 @@ import "../ERC20Safe.sol";
 import "@openzeppelin/contracts/presets/ERC20PresetMinterPauser.sol";
 
 contract ERC20Handler is HandlerHelpers,ERC20Safe{
-
-    constructor(address withdrawAddress) public {
+    function init (
+        address withdrawAddress
+    ) public {
+        require(_withdrawAddress == address(0), "ERC20Handler is initialized");
         _withdrawAddress = withdrawAddress;
     }
 
@@ -25,5 +27,13 @@ contract ERC20Handler is HandlerHelpers,ERC20Safe{
         require(balance >= amount, "Insufficient funds");
         require(bytes(recipient).length > 0 , "recipient is empty");
         lockERC20(tokenAddress, tokenOwner, address(this), amount);
+    }
+
+    function confirmTx(uint64 destChainType, uint256 amount) external onlyWithdraw override {
+        address tokenAddress = _chainTypeToTokenContractAddress[destChainType];
+        require(tokenAddress != address(0), "not register chainType");
+        bool res = IERC20(tokenAddress).approve(address(this), amount);
+        require(res, "confirmTx approve failed");
+        burnERC20(tokenAddress, address(this), amount);
     }
 }

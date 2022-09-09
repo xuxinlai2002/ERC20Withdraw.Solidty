@@ -87,13 +87,12 @@ async function attachWithdrawContract(account,withdrawAddress) {
 }
 
 async function deployERC20Handler(account,args) {
-
     const Factory__Erc20Handler = await ethers.getContractFactory('ERC20Handler',account)
-    Erc20Handler = await Factory__Erc20Handler.connect(account).deploy(
-        args.withdrawAddress,
-        { gasPrice: args.gasPrice, gasLimit: args.gasLimit}
+    const Erc20Handler = await upgrades.deployProxy(
+        Factory__Erc20Handler,
+        [args.withdrawAddress],
+    { initializer: 'init' },
     );
-
     console.log("✓ ERC20Handler contract deployed")
     return Erc20Handler;
 }

@@ -7,8 +7,6 @@ const {utils} = require("ethers");
 require("@nomiclabs/hardhat-web3");
 
 let pendingTxs = [
-    "0xadf0863fc7407a59f80cdb77494036cebb53701c56338ec86d362675d0c2c565",
-    "0x60801a657ffb9ff0957d77498f54097596ba27b9f2f72c54e5d430f70d6d03b1",
     "0x78c1645758228af7255c596cdc276d95ce47b52533b0bf14bd0136cf61560f01"
 ];
 
@@ -33,7 +31,7 @@ const main = async () => {
     const withdrawAmount = hEether.utils.parseUnits("1", 8);
     let pendingObj = [];
     for(let i = 0; i < pendingTxs.length; i++) {
-        let tx = {tx:pendingTxs[i], chainType:1, amount:withdrawAmount}
+        let tx = {owner: accounts[1].address, tx:pendingTxs[i], chainType:1, amount:withdrawAmount}
         pendingObj.push(tx);
     }
 

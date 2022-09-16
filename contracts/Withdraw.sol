@@ -9,9 +9,12 @@ import "./interfaces/IERCHandler.sol";
 import "./interfaces/IWithdraw.sol";
 import "./utils/common.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "hardhat/console.sol";
 
+
 contract Withdraw is IWithdraw {
+    using EnumerableSet for EnumerableSet.Bytes32Set;
     uint256 public _fee;
     address private _owner;
 
@@ -20,44 +23,13 @@ contract Withdraw is IWithdraw {
     mapping(address => bytes32) private _changeSubmitterFlag;
     mapping(bytes32 => address[]) private _changeSubmitterSigners;
     mapping(bytes32 => bytes32[]) private _pendingWithdrawTxsMap;
-
     //tx => PendingTx
     mapping(bytes32 => PendingTx) private _pendingTxMap;
     bytes32[] private _pendingList;
+    EnumerableSet.Bytes32Set _failedTxList;
 
     address[] internal _submitters;
-    string constant  internal _version = "v0.0.1";
-
-    event WithdrawAsset(
-        uint64 chainType,
-        string desition,
-        uint256 amount
-    );
-
-    event NewSubmitterCommit (
-        uint indexed totalCount,
-        uint indexed nowCount
-    );
-
-    event NewSubmitterChanged (
-        address[] indexed accounts
-    );
-
-    event PendingWithdrawTxs (
-        bytes32 indexed pengingID,
-        bytes32[] txs
-    );
-
-    event ConfirmWithdrawTxs (
-        bytes32 indexed pengingID,
-        bytes32 targetTXID,
-        bytes32[] txs
-    );
-
-    event RegisterToken (
-        uint64 indexed chainType,
-        address indexed tokenAddress
-    );
+    string constant  internal _version = "v0.0.2";
 
     modifier onlyOwner() {
         _onlyOwner();
@@ -241,8 +213,9 @@ contract Withdraw is IWithdraw {
         address handler = _chainTypeToHandlerAddress[destChainType];
         require(handler != address(0), "not register handler");
         require(fee >= 1000000000000000000 && fee % 1000000000000000000 == 0);//todo need confirm this value now 1ELA
+        require(msg.value == fee);
         IERCHandler(handler).withdraw(destChainType, owner, recipient, amount);
-        emit WithdrawAsset(destChainType,recipient, amount);
+        emit WithdrawAsset(msg.sender, destChainType, recipient, amount);
         safeTransferFee(fee);
     }
 
@@ -317,7 +290,7 @@ contract Withdraw is IWithdraw {
             uint j = 0;
             for (j = 0; j < _pendingList.length; j++) {
                 if (_pendingList[j] == txs[i]) {
-                    deleteConfirmTx(j);
+                    deleteWithdrawTx(j, true);
                     break;
                 }
             }
@@ -326,7 +299,7 @@ contract Withdraw is IWithdraw {
         emit ConfirmWithdrawTxs(pendingID, targetTXID, txs);
     }
 
-    function deleteConfirmTx(uint index) internal {
+    function deleteWithdrawTx(uint index, bool isConfirm) internal {
         require(index < _pendingList.length, "out of bound with widthdraw length");
         bytes32 txID = _pendingList[index];
         delete _pendingList[index];
@@ -335,9 +308,51 @@ contract Withdraw is IWithdraw {
         }
         _pendingList.pop();
 
-        PendingTx memory ts = _pendingTxMap[txID];
-        address handler = _chainTypeToHandlerAddress[ts.chainType];
-        IERCHandler(handler).confirmTx(ts.chainType, ts.amount);
+        if (isConfirm) {
+            PendingTx memory ptx = _pendingTxMap[txID];
+            address handler = _chainTypeToHandlerAddress[ptx.chainType];
+            IERCHandler(handler).confirmTx(ptx.chainType, ptx.amount);
+            delete _pendingTxMap[txID];
+        }
+    }
+
+    function getFailedPendingTxs() external override view returns(bytes32[] memory) {
+        return _failedTxList._inner._values;
+    }
+
+    function setPendingWithdrawTxFailed(bytes32 pendingID, bytes[] memory signatures) external override {
+        bytes32[] memory txs = _pendingWithdrawTxsMap[pendingID];
+        require(txs.length > 0, "[setPendingWithdrawTxFailed] pendingID is not found");
+        bool res = verifySignatures(pendingID, signatures);
+        require(res, "[setPendingWithdrawTxFailed] verified signature failed");
+
+        for (uint i = 0; i < txs.length; i ++) {
+            uint j = 0;
+            for (j = 0; j < _pendingList.length; j++) {
+                if (_pendingList[j] == txs[i]) {
+                    deleteWithdrawTx(j, false);
+                    break;
+                }
+            }
+        }
+
+        delete _pendingWithdrawTxsMap[pendingID];
+        emit WithdrawTxFailed(pendingID, txs);
+
+        for (uint i = 0; i < txs.length; i ++) {
+            _failedTxList.add(txs[i]);
+        }
+    }
+
+    function retrieve(bytes32 txID) external {
+        PendingTx memory tx = _pendingTxMap[txID];
+        require(tx.owner == msg.sender, "sender_error");
+        require(_failedTxList.contains(txID), "not_failed_tx");
+
+        address handler = _chainTypeToHandlerAddress[tx.chainType];
+        IERCHandler(handler).retrieve(tx.chainType, msg.sender, tx.amount);
+        _failedTxList.remove(txID);
+        delete _pendingTxMap[txID];
     }
 }
 

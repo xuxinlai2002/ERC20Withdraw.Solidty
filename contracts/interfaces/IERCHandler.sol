@@ -24,4 +24,6 @@ interface IERCHandler {
     function withdraw(uint64 destChainType, address tokenOwner, string memory recipient, uint256 amount) external;
 
     function confirmTx(uint64 destChainType, uint256 amount) external;
+
+    function retrieve(uint64 destChainType, address sender, uint256 amount) external;
 }

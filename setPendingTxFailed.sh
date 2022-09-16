@@ -1,0 +1,1 @@
+npx hardhat run scripts/setPendingTxFailed.js --network testnet

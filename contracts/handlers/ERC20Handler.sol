@@ -36,4 +36,9 @@ contract ERC20Handler is HandlerHelpers,ERC20Safe{
         require(res, "confirmTx approve failed");
         burnERC20(tokenAddress, address(this), amount);
     }
+
+    function retrieve(uint64 destChainType, address sender, uint256 amount) external onlyWithdraw override {
+        address tokenAddress = _chainTypeToTokenContractAddress[destChainType];
+        releaseERC20(tokenAddress, sender, amount);
+    }
 }
